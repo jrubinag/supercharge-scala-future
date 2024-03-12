@@ -2,6 +2,7 @@ package exercises.action.fp.search
 
 import java.time.LocalDate
 import exercises.action.fp.IO
+import exercises.action.fp.search.SearchResult.bestOrdering
 
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
@@ -25,8 +26,17 @@ object SearchFlightService {
   //       You can also defined tests for `SearchResult` in `SearchResultTest`
   def fromTwoClients(client1: SearchFlightClient, client2: SearchFlightClient): SearchFlightService =
     new SearchFlightService {
-      def search(from: Airport, to: Airport, date: LocalDate): IO[SearchResult] =
-        ???
+      def search(from: Airport, to: Airport, date: LocalDate): IO[SearchResult] = {
+        def searchByClient(client: SearchFlightClient) =
+          client.search(from,to,date).handleErrorWith(e => IO.debug(s"Ops an errors occurred: $e") andThen IO(List.empty))
+
+        for {
+          result1 <- searchByClient(client1)
+          result2 <- searchByClient(client2)
+//          sorted = (result1 ++ result2).sorted(bestOrdering)
+          searchResult = SearchResult(result1 ++ result2)
+        } yield searchResult
+      }
 
     }
 

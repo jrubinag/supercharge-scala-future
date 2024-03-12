@@ -1,10 +1,9 @@
 package exercises.action.fp.search
 
 import java.time._
-
 import exercises.action.fp.IO
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 
 object SearchFlightGenerator {
 
@@ -57,5 +56,8 @@ object SearchFlightGenerator {
       9 -> successfulClientGen,
       1 -> failingClientGen
     )
+
+
+  implicit val  arbitrarySearchFlightClient: Arbitrary[SearchFlightClient] = Arbitrary(clientGen)
 
 }
