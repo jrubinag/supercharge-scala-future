@@ -10,7 +10,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import java.time.{Duration, Instant, LocalDate}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.global
 import scala.util.Random
 
 // Run the test using the green arrow next to class name (if using IntelliJ)
@@ -30,7 +30,7 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
     val client1 = SearchFlightClient.constant(IO(List(flight3, flight1)))
     val client2 = SearchFlightClient.constant(IO(List(flight2, flight4)))
 
-    val service = SearchFlightService.fromTwoClients(client1, client2)
+    val service = SearchFlightService.fromTwoClients(client1, client2)(global)
     val result  = service.search(parisOrly, londonGatwick, today).unsafeRun()
 
     assert(result == SearchResult(List(flight1, flight2, flight3, flight4)))
@@ -49,7 +49,7 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
     val client1 = SearchFlightClient.constant(IO(List(flight3, flight1)))
     val client2 = SearchFlightClient.constant(IO.fail(new Exception("Boom")))
 
-    val service = SearchFlightService.fromTwoClients(client1, client2)
+    val service = SearchFlightService.fromTwoClients(client1, client2)(global)
     val result = service.search(parisOrly, londonGatwick, today).unsafeRun()
 
     assert(result == SearchResult(List(flight1, flight3)))
@@ -59,7 +59,7 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
     test("always return a successful result event if clients fail") {
   forAll{ (client1: SearchFlightClient, client2: SearchFlightClient) =>
       val today = LocalDate.now()
-      val service = SearchFlightService.fromTwoClients(client1, client2)
+      val service = SearchFlightService.fromTwoClients(client1, client2)(global)
 
 
       val result = service.search(parisOrly, londonGatwick, today).attempt
@@ -72,7 +72,7 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
   forAll{
     (clientList: List[SearchFlightClient]) =>
       val today = LocalDate.now()
-      val service = SearchFlightService.fromClients(clientList)
+      val service = SearchFlightService.fromClients(clientList)(global)
 
       val result = service.search(parisOrly, londonGatwick, today).attempt.unsafeRun()
 
@@ -90,7 +90,7 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
       val client3 = SearchFlightClient.constant(IO(flights3))
 
       val today = LocalDate.now()
-      val service = SearchFlightService.fromClients(List(client1,client2,client3))
+      val service = SearchFlightService.fromClients(List(client1,client2,client3))(global)
 
       val result = service.search(parisOrly, londonGatwick, today).unsafeRun()
 
@@ -102,8 +102,8 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
     forAll {
       (clientList: List[SearchFlightClient]) =>
         val today = LocalDate.now()
-        val service1 = SearchFlightService.fromClients(clientList)
-        val service2 = SearchFlightService.fromClients(Random.shuffle(clientList))
+        val service1 = SearchFlightService.fromClients(clientList)(global)
+        val service2 = SearchFlightService.fromClients(Random.shuffle(clientList))(global)
 
         val result1 = service1.search(parisOrly, londonGatwick, today).unsafeRun()
         val result2 = service2.search(parisOrly, londonGatwick, today).unsafeRun()

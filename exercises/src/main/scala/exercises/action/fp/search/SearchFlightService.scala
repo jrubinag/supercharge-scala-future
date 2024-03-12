@@ -24,18 +24,16 @@ object SearchFlightService {
   // (see `SearchResult` companion object).
   // Note: A example based test is defined in `SearchFlightServiceTest`.
   //       You can also defined tests for `SearchResult` in `SearchResultTest`
-  def fromTwoClients(client1: SearchFlightClient, client2: SearchFlightClient): SearchFlightService =
+  def fromTwoClients(client1: SearchFlightClient, client2: SearchFlightClient)(ec: ExecutionContext): SearchFlightService =
     new SearchFlightService {
       def search(from: Airport, to: Airport, date: LocalDate): IO[SearchResult] = {
         def searchByClient(client: SearchFlightClient) =
           client.search(from,to,date).handleErrorWith(e => IO.debug(s"Ops an errors occurred: $e") andThen IO(List.empty))
 
-        for {
-          result1 <- searchByClient(client1)
-          result2 <- searchByClient(client2)
-//          sorted = (result1 ++ result2).sorted(bestOrdering)
-          searchResult = SearchResult(result1 ++ result2)
-        } yield searchResult
+        // implement par version
+        val res = searchByClient(client1).parZip(searchByClient(client2))(ec)
+
+          res.map{case (res1, res2) => SearchResult(res1 ++ res2)}
       }
 
     }
@@ -54,7 +52,7 @@ object SearchFlightService {
   // a list of `SearchFlightClient`.
   // Note: You can use a recursion/loop/foldLeft to call all the clients and combine their results.
   // Note: We can assume `clients` to contain less than 100 elements.
-  def fromClients(clients: List[SearchFlightClient]): SearchFlightService =
+  def fromClients(clients: List[SearchFlightClient])(ec: ExecutionContext): SearchFlightService =
     new SearchFlightService {
       def search(from: Airport, to: Airport, date: LocalDate): IO[SearchResult] = {
         def searchByClient(client: SearchFlightClient) =
@@ -91,7 +89,7 @@ object SearchFlightService {
 
         //IMPLEMENTATION USING SEQUENCE
 //        val flights = clients.map(searchByClient).sequence.map(_.flatten)
-        val flights = clients.traverse(searchByClient).map(_.flatten)
+        val flights = clients.parTraverse(searchByClient)(ec).map(_.flatten)
           flights.map(SearchResult(_))
       }
     }

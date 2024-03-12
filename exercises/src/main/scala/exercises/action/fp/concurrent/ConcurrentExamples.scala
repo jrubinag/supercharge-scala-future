@@ -23,7 +23,8 @@ object ConcurrentExamples extends App {
   val parTwo       = streamA.parZip(streamB)(ec)
   lazy val parMany = List(streamA, streamB, streamC, streamD, streamE, streamF).parSequence(ec)
 
-  parTwo.unsafeRun()
+//  parTwo.unsafeRun()
+  parMany.unsafeRun()
 
   // Print "Task $taskName 0"
   // sleep $duration

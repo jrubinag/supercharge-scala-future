@@ -147,8 +147,15 @@ trait IO[A] {
 
   // Runs both the current IO and `other` concurrently,
   // then combine their results into a tuple
-  def parZip[Other](other: IO[Other])(ec: ExecutionContext): IO[(A, Other)] =
-    ???
+  def parZip[Other](other: IO[Other])(ec: ExecutionContext): IO[(A, Other)] = IO {
+    implicit val executionContext = ec
+    val future1 = Future(this.unsafeRun())
+    val future2 = Future(other.unsafeRun())
+
+    val zipped = future1.zip(future2)
+
+    Await.result(zipped, Duration.Inf)
+  }
 
 }
 
@@ -224,7 +231,11 @@ object IO {
   // List(User(1111, ...), User(2222, ...), User(3333, ...))
   // Note: You may want to use `parZip` to implement `parSequence`.
   def parSequence[A](actions: List[IO[A]])(ec: ExecutionContext): IO[List[A]] =
-    ???
+    actions.foldLeft(IO(List.empty[A])){ case (acc,action) =>
+      acc.parZip(action)(ec).map{ case (resAcc, resAction) =>
+        resAcc ++ List(resAction)
+      }
+    }
 
   // `parTraverse` is a shortcut for `map` followed by `parSequence`, similar to how
   // `flatMap`     is a shortcut for `map` followed by `flatten`
