@@ -68,6 +68,35 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
     }
   }
 
+  test("fromClients should handle multiple clients gracefully") {
+  forAll{
+    (clientList: List[SearchFlightClient]) =>
+      val today = LocalDate.now()
+      val service = SearchFlightService.fromClients(clientList)
+
+      val result = service.search(parisOrly, londonGatwick, today).attempt.unsafeRun()
+
+      assert(result.isSuccess)
+  }
+  }
+
+  //harcoded example
+  //NOTE you can use arbitrary as implicit or explicit gen
+  test("fromClients should get the data from multiple clients"){
+    forAll(Gen.listOf(flightGen), Gen.listOf(flightGen), Gen.listOf(flightGen)){ (flights1: List[Flight] , flights2 : List[Flight], flights3: List[Flight]) =>
+
+      val client1 = SearchFlightClient.constant(IO(flights1))
+      val client2 = SearchFlightClient.constant(IO(flights2))
+      val client3 = SearchFlightClient.constant(IO(flights3))
+
+      val today = LocalDate.now()
+      val service = SearchFlightService.fromClients(List(client1,client2,client3))
+
+      val result = service.search(parisOrly, londonGatwick, today).unsafeRun()
+
+      assert(result == SearchResult(flights1 ++ flights2 ++flights3))
+    }
+  }
 
 
 }
