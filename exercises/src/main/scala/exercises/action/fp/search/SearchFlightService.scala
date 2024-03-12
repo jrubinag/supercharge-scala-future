@@ -60,21 +60,33 @@ object SearchFlightService {
         def searchByClient(client: SearchFlightClient) =
           client.search(from, to, date).handleErrorWith(e => IO.debug(s"Ops an errors occurred: $e") andThen IO(List.empty))
 
-        @tailrec
-        def recSearch(clients: List[SearchFlightClient], acc: IO[List[Flight]]): IO[List[Flight]] = clients match {
-          case Nil => acc
-          case currClient :: remainingClients =>
-            val newAcc = for {
-              resultAccumulated <- acc
-              currentResult <- searchByClient(currClient)
-            } yield resultAccumulated ++ currentResult
-            recSearch(remainingClients, newAcc)
+        // FROM HERE RECURSIVE IMPLEMENTATION
+//        @tailrec
+//        def recSearch(clients: List[SearchFlightClient], acc: IO[List[Flight]]): IO[List[Flight]] = clients match {
+//          case Nil => acc
+//          case currClient :: remainingClients =>
+//            val newAcc = for {
+//              resultAccumulated <- acc
+//              currentResult <- searchByClient(currClient)
+//            } yield resultAccumulated ++ currentResult
+//            recSearch(remainingClients, newAcc)
+//        }
+//
+//        recSearch(clients, IO(Nil)).map(SearchResult(_))
+        // RECURSIVE IMPLEMENTATION ENDS HERE
+
+
+        //FROM HERE FOLD IMPLEMENTATION
+        val flights = clients.foldLeft(IO(List.empty[Flight])){ case (acc, currentClient) =>
+          for {
+            accResult <- acc
+            currentResult <- searchByClient(currentClient)
+          } yield accResult ++ currentResult
         }
 
-        recSearch(clients, IO(Nil)).map(SearchResult(_))
-//        val flights = clients.foldLeft(List.empty[Flight]){ case (acc, currentClient) =>
-//
-//        }
+        flights.map(SearchResult(_))
+
+        //FOLD IMPLEMENTATION ENDS HERE
       }
     }
 
