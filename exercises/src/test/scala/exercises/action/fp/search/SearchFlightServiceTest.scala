@@ -98,5 +98,18 @@ class SearchFlightServiceTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
     }
   }
 
+  test("fromClients - clieints order doesn't matter"){
+    forAll {
+      (clientList: List[SearchFlightClient]) =>
+        val today = LocalDate.now()
+        val service1 = SearchFlightService.fromClients(clientList)
+        val service2 = SearchFlightService.fromClients(Random.shuffle(clientList))
+
+        val result1 = service1.search(parisOrly, londonGatwick, today).unsafeRun()
+        val result2 = service2.search(parisOrly, londonGatwick, today).unsafeRun()
+        assert(result1 == result2)
+    }
+  }
+
 
 }

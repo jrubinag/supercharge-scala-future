@@ -77,16 +77,22 @@ object SearchFlightService {
 
 
         //FROM HERE FOLD IMPLEMENTATION
-        val flights = clients.foldLeft(IO(List.empty[Flight])){ case (acc, currentClient) =>
-          for {
-            accResult <- acc
-            currentResult <- searchByClient(currentClient)
-          } yield accResult ++ currentResult
-        }
-
-        flights.map(SearchResult(_))
+//        val flights = clients.foldLeft(IO(List.empty[Flight])){ case (acc, currentClient) =>
+//          for {
+//            accResult <- acc
+//            currentResult <- searchByClient(currentClient)
+//          } yield accResult ++ currentResult
+//        }
+//
+//        flights.map(SearchResult(_))
 
         //FOLD IMPLEMENTATION ENDS HERE
+
+
+        //IMPLEMENTATION USING SEQUENCE
+//        val flights = clients.map(searchByClient).sequence.map(_.flatten)
+        val flights = clients.traverse(searchByClient).map(_.flatten)
+          flights.map(SearchResult(_))
       }
     }
 
